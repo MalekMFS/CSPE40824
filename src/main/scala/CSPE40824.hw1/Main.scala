@@ -24,25 +24,25 @@ object Main extends App{
   /** for app: lambda = 5, 10, 15, and fixed wait time*/
   //TODO Check BigDecimal and Double problem
   val params    = file"src/main/resources/parameters.conf".lines.map(_.toInt).take(2) //FIXME file location for TA test
-  val theta     = params.head               // waiting time. TWO MODES: fixed and exp
-  val mu        = params.tail.head          // server service rate
+  val theta     = params.head                // waiting time. TWO MODES: fixed and exp
+  val mu        = params.tail.head           // server service rate
   val lambda    = BigDecimal("0.1") to BigDecimal("20.0") by BigDecimal("0.1") // entrance rate (poisson param).
-  val r         = scala.util.Random         // Random number generator. use: r.nextFloat
-  val totalCust = pow(10, 3) .toInt         //FIXME 10^7 or 10^8
+  val r         = scala.util.Random          // Random number generator. use: r.nextFloat
+  val totalCust = pow(10, 3) .toInt          //FIXME 10^7 or 10^8
   val expDist   = (x: Double, lam: BigDecimal) => -log(1 - x) / lam
-  val k         = 12                        // Queue size
+  val k         = 12                         // Queue size
 
-  var queue     = mutable.Queue[Customer]() // server queue. first is being served
+  var queue     = mutable.Queue[Customer]()  // server queue. first is being served
   var events    = mutable.ListBuffer[Event]()// events list.
-  var time:BigDecimal= 0.0                  //FIXME is time Int?
-  var nBlocked  = 0                         // n left customers due to full queue
-  var nLeft     = 0                         // n left customers due to Deadline (theta)
+  var time:BigDecimal= 0.0                   //FIXME is time Int?
+  var nBlocked  = 0                          // n left customers due to full queue
+  var nLeft     = 0                          // n left customers due to Deadline (theta)
 
 
   /** create a list of Customers */
   //TODO other lambdas?
-  val randTimes: List[BigDecimal] = List.fill(totalCust)( expDist(r.nextDouble(), lambda.head) ).scan(BigDecimal("0.0"))(_+_)
-  val customers: List[Customer] = randTimes.map( arrive => Customer(arrive, expDist(r.nextDouble(), mu), theta) )
+  val randTimes: Iterator[BigDecimal] = List.fill(totalCust)( expDist(r.nextDouble(), lambda.head) ).scan(BigDecimal("0.0"))(_+_).iterator
+  val customers: Iterator[Customer]   = randTimes.map( arrive => Customer(arrive, expDist(r.nextDouble(), mu), theta) )
 
   /** Main Loop */
   // make events list. pre-define or through the loop?
