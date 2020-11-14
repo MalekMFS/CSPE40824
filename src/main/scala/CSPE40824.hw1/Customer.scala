@@ -1,5 +1,5 @@
 package CSPE40824.hw1
 
-
-/** Att: arrive time, wait time, service time, id, ?status? */
-case class Customer(arriveT: BigDecimal, serviceT: BigDecimal, waitT: Int)
+//TODO add a status attribute?
+/** Att: arrive time, wait time, service time, id */
+case class Customer(arriveT: BigDecimal, serviceT: BigDecimal, waitT: Int, id: Int)

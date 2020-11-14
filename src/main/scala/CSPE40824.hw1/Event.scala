@@ -1,0 +1,12 @@
+package CSPE40824.hw1
+
+//TODO add a customer blocked event?
+object EventType extends Enumeration {
+  type EventType = Value
+  /** types:customer arrival, customer exit (due to deadline), customer exit from server */
+  val Arrival, EarlyLeave, Done = Value
+}
+
+/** att: type:[customer arrival, customer exit (aka deadline), customer exit from server], occurrence time, customer id */
+import CSPE40824.hw1.EventType.EventType
+case class Event(custId: Int, time: BigDecimal, eType: EventType)
