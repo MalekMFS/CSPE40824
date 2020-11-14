@@ -34,20 +34,47 @@ object Main extends App{
 
   var queue     = mutable.Queue[Customer]()  // server queue. first is being served
   var events    = mutable.ListBuffer[Event]()// events list.
-  var time:BigDecimal= 0.0                   //FIXME is time Int?
-  var nBlocked  = 0                          // n left customers due to full queue
-  var nLeft     = 0                          // n left customers due to Deadline (theta)
+//  var time:BigDecimal= 0.0                   // FIXME is time Int?
+  var nBlocked  = 0                          // #customers encountered full queue
+  var nOverdue  = 0                          // #customers left due to Deadline (theta)
 
 
-  /** create a list of Customers */
-  //TODO other lambdas?
+  /** create a list of Customers and their arrival, service, and wait time. */
+  // TODO other lambdas?
+  // generate arrival times, using expDist summing with previous arrival.
   val randTimes: Iterator[BigDecimal] = List.fill(totalCust)( expDist(r.nextDouble(), lambda.head) ).scan(BigDecimal("0.0"))(_+_).iterator
-  val customers: Iterator[Customer]   = randTimes.map( arrive => Customer(arrive, expDist(r.nextDouble(), mu), theta) )
+  val customers: Iterator[Customer]   = randTimes.zipWithIndex.map { case (arrive, index) =>
+                                           Customer(arrive, expDist(r.nextDouble(), mu), theta, index) }
 
   /** Main Loop */
-  // make events list. pre-define or through the loop?
-  // process events
-  // handle queue 'k' limitation and update blocked customer
+  //TODO make sure the one have service won't removed because of past deadline.
+  randTimes.foreach{ time =>
+    // make events' list.   pre-define  or  calc through the loop?
+    //Event:
+    // 1. Customer Arrival
+      // check queue size:
+        // 1.1: Queue is full:
+          // user blocked, inc nBlocked.
+        // 1.2: Queue is not full and not empty (server is busy):
+          // add customer to the queue, and add a arrival Event
+          // calculate 'deadline = waitT + time' and add to the events? (to be removed if served)
+        // 1.3: Queue is empty:
+          // add customer to the queue, and add a arrival Event
+          // calculate 'Done time = waitT + time' to make a Done Event and hold it in a proper place
+    // 2. Customer overdue (deadline)
+      // remove the customer from the queue and reorder the queue, and inc the nOverdue
+    // 3. Customer Done due to getting the service
+      // remove the customer from the queue, and add a Done event
+      // if the queue is not empty:
+        // ignore (remove) the deadline (event) of new served customer
+
+    // process events
+    // handle queue 'k' limitation and update blocked customer
+  }
+
+  //TODO calc pb and pd
+  //TODO change the lambda in the loop
+  //TODO remove the output file at the beginning. and append result of each lambda.
   //TODO add a iteration printer function for debugging purposes
   //TODO make new files for FIXED and EXP modes
 }
