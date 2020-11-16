@@ -2,10 +2,12 @@ package CSPE40824.hw1
 
 
 import better.files._
+import CSPE40824.hw1.EventType.{Arrival, Done, EventType, Overdue}
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 import scala.math.BigDecimal.double2bigDecimal
-import scala.math.{log, pow} // Natural Log
+import scala.math.{log, pow}
 
 /** Main Console for FCFS queue.
  *
@@ -27,54 +29,69 @@ object Main extends App{
   val theta     = params.head                // waiting time. TWO MODES: fixed and exp
   val mu        = params.tail.head           // server service rate
   val lambda    = BigDecimal("0.1") to BigDecimal("20.0") by BigDecimal("0.1") // entrance rate (poisson param).
-  val r         = scala.util.Random          // Random number generator. use: r.nextFloat
-  val totalCust = pow(10, 3) .toInt          //FIXME 10^7 or 10^8
+  val r         = scala.util.Random          // Random number generator. use: r.nextDouble
+  val totalCust = pow(10, 6) .toInt          //FIXME 10^7 or 10^8
   val expDist   = (x: Double, lam: BigDecimal) => -log(1 - x) / lam
   val k         = 12                         // Queue size
 
   var queue     = mutable.Queue[Customer]()  // server queue. first is being served
-  var events    = mutable.ListBuffer[Event]()// events list.
-//  var time:BigDecimal= 0.0                   // FIXME is time Int?
-  var nBlocked  = 0                          // #customers encountered full queue
-  var nOverdue  = 0                          // #customers left due to Deadline (theta)
+  var events    = mutable.PriorityQueue.empty(MinOrder)   // events list.
+  var time:BigDecimal= 0.0
+  var nBlocked:Int   = 0                     // #customers encountered full queue
+  var nOverdue:Int   = 0                     // #customers left due to Deadline (theta)
 
 
-  /** create a list of Customers and their arrival, service, and wait time. */
-  // TODO other lambdas?
-  // generate arrival times, using expDist summing with previous arrival.
+  /** create a list of Customers and their arrival, service, and wait time.
+   *
+   * generates arrival times, using expDist summing with previous arrival */
+  // TODO loop over lambdas
   val randTimes: Iterator[BigDecimal] = List.fill(totalCust)( expDist(r.nextDouble(), lambda.head) ).scan(BigDecimal("0.0"))(_+_).iterator
-  val customers: Iterator[Customer]   = randTimes.zipWithIndex.map { case (arrive, index) =>
-                                           Customer(arrive, expDist(r.nextDouble(), mu), theta, index) }
+  val customers: Map[Int, Customer]   = randTimes.zipWithIndex.map { case (arrive, index) =>
+                                           ( index, Customer(arrive, expDist(r.nextDouble(), mu), theta, index) ) }.toMap
+  events ++= customers.values.map(c => Event(Arrival, c.arriveT, c.id))
 
   /** Main Loop */
-  //TODO make sure the one have service won't removed because of past deadline.
-  randTimes.foreach{ time =>
-    // make events' list.   pre-define  or  calc through the loop?
-    //Event:
-    // 1. Customer Arrival
-      // check queue size:
-        // 1.1: Queue is full:
-          // user blocked, inc nBlocked.
-        // 1.2: Queue is not full and not empty (server is busy):
-          // add customer to the queue, and add a arrival Event
-          // calculate 'deadline = waitT + time' and add to the events? (to be removed if served)
-        // 1.3: Queue is empty:
-          // add customer to the queue, and add a arrival Event
-          // calculate 'Done time = waitT + time' to make a Done Event and hold it in a proper place
-    // 2. Customer overdue (deadline)
-      // remove the customer from the queue and reorder the queue, and inc the nOverdue
-    // 3. Customer Done due to getting the service
-      // remove the customer from the queue, and add a Done event
-      // if the queue is not empty:
-        // ignore (remove) the deadline (event) of new served customer
+  while(events.nonEmpty){
+    //events = events.sortBy(_.time)
+    val e = events.head; time = e.time
+    println(f"${e.eType} | Customer: ${e.custId} | Time: ${e.time}")
+    println(f"> Queue: ${queue.size} | Events: ${events.size}")
+    events = events.tail
 
-    // process events
-    // handle queue 'k' limitation and update blocked customer
+    e.eType match {
+      case Arrival =>
+        val newCust = customers(e.custId)
+        if (queue.size == k) nBlocked += 1
+        else if(queue.size < k && queue.nonEmpty){
+          queue  += newCust
+          events += Event(Overdue, time + newCust.waitT, newCust.id)
+        }
+        else if(queue.isEmpty){
+          queue  += newCust
+          events += Event(Done, time + newCust.serviceT, newCust.id)
+        }
+
+      case Overdue =>
+        queue = queue.filter(_.id != e.custId); nOverdue += 1
+
+      case Done =>
+        queue.dequeue()
+        if (queue.nonEmpty){
+          val current = queue.head
+          events = events.filter(a => a.custId != current.id || a.eType != Overdue) // remove user overdue event
+          events += Event(Done, time + current.serviceT, current.id)
+        }
+
+    }
   }
+  println(f"Overdues: $nOverdue | Blocked: $nBlocked")
 
   //TODO calc pb and pd
   //TODO change the lambda in the loop
   //TODO remove the output file at the beginning. and append result of each lambda.
-  //TODO add a iteration printer function for debugging purposes
-  //TODO make new files for FIXED and EXP modes
+  //TODO make 2 new files for FIXED and EXP modes
+}
+
+object MinOrder extends Ordering[Event] {
+  override def compare(x: Event, y: Event): Int = y.time.compareTo(x.time)
 }

@@ -9,4 +9,4 @@ object EventType extends Enumeration {
 
 /** att: type:[customer arrival, customer exit (aka deadline), customer exit from server], occurrence time, customer id */
 import CSPE40824.hw1.EventType.EventType
-case class Event(custId: Int, time: BigDecimal, eType: EventType)
+case class Event(eType: EventType, time: BigDecimal, custId: Int)
