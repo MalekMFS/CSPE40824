@@ -2,10 +2,9 @@ package CSPE40824.hw1
 
 
 import better.files._
-import CSPE40824.hw1.EventType.{Arrival, Done, EventType, Overdue}
+import CSPE40824.hw1.EventType.{Arrival, Done, Overdue}
 
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.math.BigDecimal.double2bigDecimal
 import scala.math.{log, pow}
 
@@ -42,8 +41,9 @@ object Main extends App{
 
 
   /** create a list of Customers and their arrival, service, and wait time.
+   * generates arrival times, using expDist summing with previous arrival.
    *
-   * generates arrival times, using expDist summing with previous arrival */
+   * Create Aririval event for all users.*/
   // TODO loop over lambdas
   val randTimes: Iterator[BigDecimal] = List.fill(totalCust)( expDist(r.nextDouble(), lambda.head) ).scan(BigDecimal("0.0"))(_+_).iterator
   val customers: Map[Int, Customer]   = randTimes.zipWithIndex.map { case (arrive, index) =>
@@ -81,8 +81,8 @@ object Main extends App{
           events = events.filter(a => a.custId != current.id || a.eType != Overdue) // remove user overdue event
           events += Event(Done, time + current.serviceT, current.id)
         }
-
     }
+
   }
   println(f"Overdues: $nOverdue | Blocked: $nBlocked")
 
