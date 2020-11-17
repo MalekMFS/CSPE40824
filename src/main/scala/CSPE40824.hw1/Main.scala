@@ -3,6 +3,7 @@ package CSPE40824.hw1
 
 import better.files._
 import CSPE40824.hw1.EventType.{Arrival, Done, Overdue}
+import better.files.Dsl.SymbolicOperations
 
 import scala.collection.mutable
 import scala.math.BigDecimal.double2bigDecimal
@@ -29,7 +30,7 @@ object Main extends App{
   val mu        = params.tail.head           // server service rate
   val lambda    = BigDecimal("0.1") to BigDecimal("20.0") by BigDecimal("0.1") // entrance rate (poisson param).
   val r         = scala.util.Random          // Random number generator. use: r.nextDouble
-  val totalCust = pow(10, 6) .toInt          //FIXME 10^7 or 10^8
+  val totalCust = pow(10, 4) .toInt          //FIXME 10^7 or 10^8
   val expDist   = (x: Double, lam: BigDecimal) => -log(1 - x) / lam
   val k         = 12                         // Queue size
 
@@ -48,19 +49,23 @@ object Main extends App{
   val randTimes: Iterator[BigDecimal] = List.fill(totalCust)( expDist(r.nextDouble(), lambda.head) ).scan(BigDecimal("0.0"))(_+_).iterator
   val customers: Map[Int, Customer]   = randTimes.zipWithIndex.map { case (arrive, index) =>
                                            ( index, Customer(arrive, expDist(r.nextDouble(), mu), theta, index) ) }.toMap
-  events ++= customers.values.map(c => Event(Arrival, c.arriveT, c.id))
+//  events ++= customers.values.map(c => Event(Arrival, c.arriveT, c.id))
+  val tempSorted = mutable.PriorityQueue.empty(MinOrder); tempSorted ++= customers.values.map(c => Event(Arrival, c.arriveT, c.id))
+  val aEvents = tempSorted.iterator
+  events += aEvents.next()
 
   /** Main Loop */
   while(events.nonEmpty){
-    //events = events.sortBy(_.time)
-    val e = events.head; time = e.time
-    println(f"${e.eType} | Customer: ${e.custId} | Time: ${e.time}")
     println(f"> Queue: ${queue.size} | Events: ${events.size}")
-    events = events.tail
+    val e = events.dequeue()
+    time = e.time
+    println(f"${e.eType} | Customer: ${e.custId} | Time: ${e.time}")
+
 
     e.eType match {
       case Arrival =>
         val newCust = customers(e.custId)
+
         if (queue.size == k) nBlocked += 1
         else if(queue.size < k && queue.nonEmpty){
           queue  += newCust
@@ -82,11 +87,16 @@ object Main extends App{
           events += Event(Done, time + current.serviceT, current.id)
         }
     }
-
+    if (events.size < totalCust && aEvents.hasNext) events += aEvents.next() //FIXME is this correct? maybe check time with last event
   }
   println(f"Overdues: $nOverdue | Blocked: $nBlocked")
+  val pd = nOverdue.toDouble / totalCust
+  val pb = nBlocked.toDouble / totalCust
+  println(f"pb: $pb | pd: $pd")
+  //FIXME remove the file in each run
+  val f1: File = file"fixed.txt"
+  f1 << f"$pb $pd"
 
-  //TODO calc pb and pd
   //TODO change the lambda in the loop
   //TODO remove the output file at the beginning. and append result of each lambda.
   //TODO make 2 new files for FIXED and EXP modes
