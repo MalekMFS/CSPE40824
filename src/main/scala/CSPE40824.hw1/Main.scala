@@ -4,6 +4,8 @@ package CSPE40824.hw1
 import better.files._
 import better.files.Dsl.SymbolicOperations
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.math.BigDecimal.double2bigDecimal
 import scala.math.pow
 
@@ -32,8 +34,11 @@ object Main extends App{
 
   val fixedOut: File = file"fixed.txt"
   fixedOut < "" // clear the file
+
   lambdas.foreach{ lambda =>
-    val (nBlocked, nOverdue, nDone) = Modeler.simulation(totalCust, k, mu, theta, lambda)
+    val List(nBlocked, nOverdue, nDone) = Future {
+      Modeler.simulation(totalCust, k, mu, theta, lambda)
+    }
 
     println(f"Overdues: $nOverdue | Blocked: $nBlocked | Done: $nDone")
     val pb = nBlocked / BigDecimal(totalCust)
@@ -43,5 +48,6 @@ object Main extends App{
     fixedOut << f"$pb $pd"
   }
 
+//  Modeler.analysis(k, mu, theta, lambdas.head)
   //TODO make 2 new files for FIXED and EXP modes
 }

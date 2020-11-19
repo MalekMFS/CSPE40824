@@ -4,12 +4,14 @@ import CSPE40824.hw1.EventType.{Arrival, Done, Overdue}
 
 import scala.collection.mutable
 import scala.math.log
+import scala.math.BigDecimal.double2bigDecimal
 
 object Modeler {
+  //TODO convert to Long instead of Bigdecimal
   val expDist: (Double, BigDecimal) => BigDecimal = (x: Double, lam: BigDecimal) => -log(1 - x) / lam
 
   def simulation (totalCust: Int, k: Int, mu: Int, theta: Int, lambda: BigDecimal): (Int, Int, Int) = {
-    var queue     = mutable.Queue[Customer]()  // server queue. first is being served
+    var queue     = new mutable.Queue[Customer](k)  // server queue. first is being served //TODO check bounded queue
     var events    = mutable.PriorityQueue.empty(MinOrder)   // events list.
     val r         = scala.util.Random          // Random number generator. use: r.nextDouble
     var time:BigDecimal= 0.0
@@ -67,6 +69,17 @@ object Modeler {
     }
     (nBlocked, nOverdue, nDone)
   }
+
+  def analysis(k: Int, mu: Int, theta: Int, lambda: BigDecimal): Unit = {
+    def fact(n: Int): Int = if (n == 1) 1 else n * fact(n-1)
+    def Pii(f: Int =>  BigDecimal)(n: Int)  =  if(n < 0) 1 else f(n)*f(n-1)
+    val expRo = (n: Int) => fact(n) / Pii((i: Int) => mu + i/BigDecimal(theta))(n) //fixme '/' cannot be applied to any
+
+    val exRoVals = (1 to k).map(expRo)
+    println()
+
+  }
+
 }
 
 object MinOrder extends Ordering[Event] {
