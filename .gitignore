@@ -7,3 +7,5 @@ target
 /logs
 .dotty-ide-*
 *.pid
+fixed.txt
+exp.txt
