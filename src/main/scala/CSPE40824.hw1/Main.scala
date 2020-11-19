@@ -30,17 +30,17 @@ object Main extends App{
   val totalCust = pow(10, 4) .toInt          // FIXME 10^7 or 10^8
   val k         = 12                         // Queue size
 
-  //TODO remove the output file at the beginning. and append result of each lambda.
+  val fixedOut: File = file"fixed.txt"
+  fixedOut < "" // clear the file
   lambdas.foreach{ lambda =>
     val (nBlocked, nOverdue, nDone) = Modeler.simulation(totalCust, k, mu, theta, lambda)
 
     println(f"Overdues: $nOverdue | Blocked: $nBlocked | Done: $nDone")
-    val pb = nBlocked.toDouble / totalCust
-    val pd = nOverdue.toDouble / totalCust
+    val pb = nBlocked / BigDecimal(totalCust)
+    val pd = nOverdue / BigDecimal(totalCust)
     println(f"pb: $pb | pd: $pd | lambda: $lambda | totalCustomers: $totalCust")
 
-    val f1: File = file"fixed.txt"
-    f1 << f"$pb $pd"
+    fixedOut << f"$pb $pd"
   }
 
   //TODO make 2 new files for FIXED and EXP modes
