@@ -3,7 +3,7 @@ package CSPE40824.hw1
 import CSPE40824.hw1.EventType.{Arrival, Done, Overdue}
 
 import scala.collection.mutable
-import scala.math.log
+import scala.math.{E, log, pow}
 import scala.math.BigDecimal.double2bigDecimal
 
 object Modeler {
@@ -84,16 +84,41 @@ object Modeler {
     (nBlocked, nOverdue, nDone)
   }
 
-  def analysis(k: Int, mu: Int, theta: Int, lambda: BigDecimal): Unit = {
-    def fact(n: Int): Int = if (n == 1) 1 else n * fact(n-1)
-    def Pii(f: Int =>  BigDecimal, n: Int):BigDecimal =
+  def analysis(k: Int, mu: Int, theta: Int, lambda: Double): Map[String, List[Double]] = {
+    def fact(n: Int): Int = if (n <= 1) 1 else n * fact(n-1)
+    def Pii(f: Int =>  Double, n: Int):Double =
       if(n < 0) 1 else f(n) * f(n - 1)
     val expRo = (n: Int) =>
-      fact(n) / Pii((i: Int) => mu + i/BigDecimal(theta),n)
+      fact(n) / Pii((i: Int) => mu + i/theta.toDouble,n)
+    val fixedRo = (n: Int) =>
+      (fact(n).toDouble / pow(mu, n+1)) * (1 - pow(E, -(mu * theta)) * (0 to n).map(i => pow(mu*theta,i) / fact(i) ).sum)
+    def Pn (n: Int, ro: Double): Double =
+    // Each returned value must multiply with 'p0' to get 'pn'
+      n compare 1 match {
+        case 0 => lambda / mu
+        case 1 => pow(lambda, n) * ro / fact(n - 1)
+        case -1 => 1 // same as others must multiply to p0
+      }
 
-    val exRoVals = (1 to k).map(expRo)
-    println()
+    val expRoVals = (0 to k).map(expRo)
+    val fixedRoVals = (0 to k).map(fixedRo)
 
+    val pnExp = (1 to k).map(n => Pn(n, expRoVals(n-1)))
+    val pnFixed = (1 to k).map(n => Pn(n, fixedRoVals(n-1)))
+    val p0Exp   = 1 / (pnExp.sum + 1.0)   // +1 to add p0
+    val p0Fixed = 1 / (pnFixed.sum + 1.0) // +1 to add p0
+
+    val truePnExp   = p0Exp   +: pnExp.map(_ * p0Exp)
+    val truePnFixed = p0Fixed +: pnFixed.map(_ * p0Fixed)
+
+    val pbExp   = truePnExp(k)
+    val pbFixed = truePnFixed(k)
+
+    /** using last formula */
+    val pdExp   = 1 - (mu/lambda) * (1 - p0Exp)
+    val pdFixed = 1 - (mu/lambda) * (1 - p0Fixed)
+
+    Map("exp" -> List(pbExp, pdExp), "fixed" -> List(pbFixed, pdFixed))
   }
 
 }

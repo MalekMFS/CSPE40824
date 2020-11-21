@@ -9,3 +9,5 @@ target
 *.pid
 fixed.txt
 exp.txt
+fixedAnalysis.txt
+expAnalysis.txt
