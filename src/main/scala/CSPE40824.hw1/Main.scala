@@ -5,7 +5,8 @@ import better.files._
 import better.files.Dsl.SymbolicOperations
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 import scala.math.BigDecimal.double2bigDecimal
 import scala.math.pow
 
@@ -28,25 +29,30 @@ object Main extends App{
   val params    = file"src/main/resources/parameters.conf".lines.map(_.toInt).take(2) //FIXME file location for TA test
   val theta     = params.head                // waiting time. TWO MODES: fixed and exp
   val mu        = params.tail.head           // server service rate
-  val lambdas   = BigDecimal("0.1") to BigDecimal("20.0") by BigDecimal("0.1") // entrance rates (poisson param).
-  val totalCust = pow(10, 4) .toInt          // FIXME 10^7 or 10^8
+  val lambdas   = 0.1 to 20.0 by 0.1         // entrance rates (poisson param).
+  val totalCust = pow(10, 5) .toInt          // FIXME 10^7 or 10^8
   val k         = 12                         // Queue size
 
   val fixedOut: File = file"fixed.txt"
   fixedOut < "" // clear the file
 
-  lambdas.foreach{ lambda =>
-    val List(nBlocked, nOverdue, nDone) = Future {
-      Modeler.simulation(totalCust, k, mu, theta, lambda)
+  val process = Future.sequence {
+    lambdas.map { lambda =>
+      Future {
+        val (nBlocked, nOverdue, nDone) = {
+          Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble)
+        }
+
+        println(f"Overdues: $nOverdue | Blocked: $nBlocked | Done: $nDone")
+        val pb = nBlocked / BigDecimal(totalCust)
+        val pd = nOverdue / BigDecimal(totalCust)
+        println(f"pb: $pb | pd: $pd | lambda: $lambda | totalCustomers: $totalCust")
+
+        fixedOut << f"$pb $pd"
+      }
     }
-
-    println(f"Overdues: $nOverdue | Blocked: $nBlocked | Done: $nDone")
-    val pb = nBlocked / BigDecimal(totalCust)
-    val pd = nOverdue / BigDecimal(totalCust)
-    println(f"pb: $pb | pd: $pd | lambda: $lambda | totalCustomers: $totalCust")
-
-    fixedOut << f"$pb $pd"
   }
+  Await.result(process,Duration.Inf)
 
 //  Modeler.analysis(k, mu, theta, lambdas.head)
   //TODO make 2 new files for FIXED and EXP modes
