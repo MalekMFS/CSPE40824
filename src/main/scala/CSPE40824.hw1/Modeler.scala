@@ -11,7 +11,7 @@ object Modeler {
   val expDist: (Double, Double) => Double =
     (x: Double, lam: Double) => -log(1 - x) / lam
 
-  def simulation (totalCust: Int, k: Int, mu: Int, theta: Int, lambda: Double, debug: Boolean = false): (Int, Int, Int) = {
+  def simulation (totalCust: Int, k: Int, mu: Double, theta: Double, lambda: Double, debug: Boolean = false): (Int, Int, Int) = {
     var queue     = new mutable.Queue[Customer](k)  // server queue limited to k. first is being served
     var events    = mutable.PriorityQueue.empty(MinOrder)   // events list.
     val r         = scala.util.Random          // Random number generator. use: r.nextDouble

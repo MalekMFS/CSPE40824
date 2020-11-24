@@ -24,7 +24,7 @@ object Main extends App{
   /** for Charts: lambda from 0.1 to 20.0 with 0.1 steps  */
   /** for app: lambda = 5, 10, 15, and fixed wait time*/
   //TODO Check BigDecimal and Double problem
-  val params    = file"src/main/resources/parameters.conf".lines.map(_.toInt).take(2) //FIXME file location for TA test
+  val params    = file"src/main/resources/parameters.conf".lines.map(_.toDouble).take(2) //FIXME file location for TA test
   val theta     = params.head                // waiting time. TWO MODES: fixed and exp
   val mu        = params.tail.head           // server service rate
   val lambdas   = 0.1 to 20.0 by 0.1         // entrance rates (poisson param).
@@ -35,7 +35,7 @@ object Main extends App{
   val fixedOut: File = file"fixed.txt"
   fixedOut < "" // clear the file
 
-  lambdas.map { lambda =>
+  lambdas.foreach { lambda =>
       val (nBlocked, nOverdue, nDone) = {
         Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble)
       }
@@ -47,6 +47,10 @@ object Main extends App{
 
       fixedOut << f"$pb $pd"
   }
+  //TODO make new file for EXP mode
+  //  val expOut: File = file"exp.txt"
+  //  expOut < "" // clear the file
+
 
 //  val expAnalysisOut: File = file"expAnalysis.txt"
 //  val fixedAnalysisOut: File = file"fixedAnalysis.txt"
@@ -60,5 +64,4 @@ object Main extends App{
 //    fixedAnalysisOut << f"${fixedRes.head} ${fixedRes.tail.head}"
 //  }
 
-  //TODO make 2 new files for FIXED and EXP modes
 }
