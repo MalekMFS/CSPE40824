@@ -31,6 +31,7 @@ object Main extends App{
   val theta     = params.head                // waiting time. TWO MODES: fixed and exp
   val mu        = params.tail.head           // server service rate
   val lambdas   = 0.1 to 20.0 by 0.1         // entrance rates (poisson param).
+//  val lambdas   = List(10.0)
   val totalCust = pow(10, 5) .toInt          // FIXME 10^7 or 10^8
   val k         = 12                         // Queue size
 
