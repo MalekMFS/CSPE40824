@@ -4,9 +4,6 @@ package CSPE40824.hw1
 import better.files._
 import better.files.Dsl.SymbolicOperations
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
 import scala.math.BigDecimal.double2bigDecimal
 import scala.math.pow
 
@@ -38,35 +35,30 @@ object Main extends App{
   val fixedOut: File = file"fixed.txt"
   fixedOut < "" // clear the file
 
-//  val process = Future.sequence {
-//    lambdas.map { lambda =>
-//      Future {
-//        val (nBlocked, nOverdue, nDone) = {
-//          Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble)
-//        }
-//
-//        println(f"Overdues: $nOverdue | Blocked: $nBlocked | Done: $nDone")
-//        val pb = nBlocked / BigDecimal(totalCust)
-//        val pd = nOverdue / BigDecimal(totalCust)
-//        println(f"pb: $pb | pd: $pd | lambda: $lambda | totalCustomers: $totalCust")
-//
-//        fixedOut << f"$pb $pd"
-//      }
-//    }
-//  }
-//  Await.result(process,Duration.Inf)
-
-  val expAnalysisOut: File = file"expAnalysis.txt"
-  val fixedAnalysisOut: File = file"fixedAnalysis.txt"
-  expAnalysisOut < ""; fixedAnalysisOut < "" // make or clear the file
-
   lambdas.map { lambda =>
-    val pbPd: Map[String, List[Double]] = Modeler.analysis(k, mu, theta, lambda.toDouble)
-    val expRes = pbPd("exp")
-    val fixedRes = pbPd("fixed")
-    expAnalysisOut   << f"${expRes.head} ${expRes.tail.head}"
-    fixedAnalysisOut << f"${fixedRes.head} ${fixedRes.tail.head}"
+      val (nBlocked, nOverdue, nDone) = {
+        Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble)
+      }
+
+      println(f"Overdues: $nOverdue | Blocked: $nBlocked | Done: $nDone")
+      val pb = nBlocked / BigDecimal(totalCust)
+      val pd = nOverdue / BigDecimal(totalCust)
+      println(f"pb: $pb | pd: $pd | lambda: $lambda | totalCustomers: $totalCust")
+
+      fixedOut << f"$pb $pd"
   }
+
+//  val expAnalysisOut: File = file"expAnalysis.txt"
+//  val fixedAnalysisOut: File = file"fixedAnalysis.txt"
+//  expAnalysisOut < ""; fixedAnalysisOut < "" // make or clear the file
+//
+//  lambdas.map { lambda =>
+//    val pbPd: Map[String, List[Double]] = Modeler.analysis(k, mu, theta, lambda.toDouble)
+//    val expRes = pbPd("exp")
+//    val fixedRes = pbPd("fixed")
+//    expAnalysisOut   << f"${expRes.head} ${expRes.tail.head}"
+//    fixedAnalysisOut << f"${fixedRes.head} ${fixedRes.tail.head}"
+//  }
 
   //TODO make 2 new files for FIXED and EXP modes
 }
