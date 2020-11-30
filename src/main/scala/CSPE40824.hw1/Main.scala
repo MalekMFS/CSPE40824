@@ -27,9 +27,9 @@ object Main extends App{
   val params    = file"src/main/resources/parameters.conf".lines.map(_.toDouble).take(2) //FIXME file location for TA test
   val theta     = params.head                // waiting time. TWO MODES: fixed and exp
   val mu        = params.tail.head           // server service rate
-  val lambdas   = 0.1 to 20.0 by 0.1         // entrance rates (poisson param).
-//  val lambdas   = List(10.0)
-  val totalCust = pow(10, 5) .toInt          // FIXME 10^7 or 10^8
+//  val lambdas   = 0.1 to 20.0 by 0.1         // entrance rates (poisson param).
+  val lambdas   = List(10.0)
+  val totalCust = pow(10, 7) .toInt          // FIXME 10^7 or 10^8
   val k         = 12                         // Queue size
 
   val fixedOut: File = file"fixed.txt"
@@ -37,12 +37,14 @@ object Main extends App{
 
   lambdas.foreach { lambda =>
       val (nBlocked, nOverdue, nDone) = {
-        Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble)
+        Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, true)
       }
 
       println(f"Overdues: $nOverdue | Blocked: $nBlocked | Done: $nDone")
       val pb = nBlocked / BigDecimal(totalCust)
       val pd = nOverdue / BigDecimal(totalCust)
+//        val pb = nBlocked.toDouble / totalCust
+//        val pd = nOverdue.toDouble / totalCust
       println(f"pb: $pb | pd: $pd | lambda: $lambda | totalCustomers: $totalCust")
 
       fixedOut << f"$pb $pd"

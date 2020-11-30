@@ -20,30 +20,41 @@ object Modeler {
     var nOverdue:Int   = 0                     // #customers left due to Deadline (theta)
     var nDone:Int   = 0                        // #customers Done and got service
 
+
+    def generateCustomer(arrivalTime: Double, id: Int, expTheta: Boolean): Customer ={
+      Customer(
+        arrivalTime,
+        expDist(r.nextDouble(), mu),
+        if(expTheta) expDist(r.nextDouble(), 1/theta) else theta,
+        id)
+    }
     /** create a list of Customers and their arrival, service, and wait time.
      * generates arrival times, using expDist summing with previous arrival.
      *
      * Create Arrival event for all users.*/
-    val randTimes: Iterator[Double] = List
-      .fill(totalCust)(expDist(r.nextDouble(), lambda))
-      .scan(0.0)(_+_)
-      .iterator
-    val customers: Map[Int, Customer]   = randTimes.zipWithIndex.map {
-      case (arrive, index) =>
-        (index,
-          Customer(arrive,
-            expDist(r.nextDouble(), mu),
-            theta,
-            index))
-    }.toMap
-    //  events ++= customers.values.map(c => Event(Arrival, c.arriveT, c.id))
-    val tempSorted = mutable.PriorityQueue.empty(MinOrder)
-    tempSorted ++= customers.values.map(c => Event(Arrival, c.arriveT, c.id))
-    val aEvents = tempSorted.iterator
-    events += aEvents.next()
+//    val randTimes: Iterator[Double] = List
+//      .fill(totalCust)(expDist(r.nextDouble(), lambda))
+//      .scan(0.0)(_+_)
+//      .iterator
+//    val customers: Map[Int, Customer]   = randTimes.zipWithIndex.map {
+//      case (arrive, index) =>
+//        (index,
+//          Customer(arrive,
+//            expDist(r.nextDouble(), mu),
+//            theta,
+//            index))
+//    }.toMap
+//    //  events ++= customers.values.map(c => Event(Arrival, c.arriveT, c.id))
+//    val tempSorted = mutable.PriorityQueue.empty(MinOrder)
+//    tempSorted ++= customers.values.map(c => Event(Arrival, c.arriveT, c.id))
+//    val aEvents = tempSorted.iterator
+//    events += aEvents.next()
 
+//    queue  += generateCustomer(time, 1, false) // do not use generate, because of initial time.
+    var i = 1
+    events += Event(Arrival, time , i)
     /** Main Loop */
-    while(events.nonEmpty){
+    while(nBlocked+nDone+nOverdue < totalCust){
       if (debug)
         println(f"> Queue: ${queue.size} | Events: ${events.size}")
       val e = events.dequeue()
@@ -51,19 +62,22 @@ object Modeler {
       if (debug)
         println(f"${e.eType} | Customer: ${e.custId} | Time: ${e.time}")
 
-
       e.eType match {
         case Arrival =>
-          val newCust = customers(e.custId)
+          val customer = generateCustomer(time, e.custId,false)
 
           if (queue.size == k) nBlocked += 1
           else if(queue.size < k && queue.nonEmpty){
-            queue  += newCust
-            events += Event(Overdue, time + newCust.waitT, newCust.id)
+            queue  += customer
+            events += Event(Overdue, time + customer.waitT, customer.id)
           }
           else if(queue.isEmpty){
-            queue  += newCust
-            events += Event(Done, time + newCust.serviceT, newCust.id)
+            queue  += customer
+            events += Event(Done, time + customer.serviceT, customer.id)
+          }
+          if (i < totalCust){
+            i += 1
+            events += Event(Arrival, time + expDist(r.nextDouble(), lambda), i) // always have the next Arrival
           }
 
         case Overdue =>
@@ -79,7 +93,6 @@ object Modeler {
             events += Event(Done, time + current.serviceT, current.id)
           }
       }
-      if (events.size < totalCust && aEvents.hasNext) events += aEvents.next() //FIXME is this correct? maybe check time with last event
     }
     (nBlocked, nOverdue, nDone)
   }
