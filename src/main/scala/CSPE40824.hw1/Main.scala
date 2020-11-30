@@ -19,17 +19,18 @@ import scala.math.pow
  *
  * - If you need precise decimal calculations, the actually reliable way is to use BigDecimal: BigDecimal("0.05") to BigDecimal("0.95") by BigDecimal("0.05") It's a lot slower, so not acceptable in some contexts, but that's the reality of working with decimals on modern computers.*/
 object Main extends App{
-  //TODO use args for switching between Simulation modes, and Analysis mode
+
   //TODO fill readme file
   /** for Charts: lambda from 0.1 to 20.0 with 0.1 steps  */
   //FIXME for app: lambda = 5, 10, 15, and fixed wait time
-
+  //TODO use args for switching between Simulation modes, and Analysis mode
+  //TODO make MAKEFILE to run exp and fixed mode in parallel
   val params    = file"src/main/resources/parameters.conf".lines.map(_.toDouble).take(2) //FIXME file location for TA test
   val theta     = params.head                // waiting time. TWO MODES: fixed and exp
   val mu        = params.tail.head           // server service rate
   val lambdas   = 0.1 to 20.0 by 0.1         // entrance rates (poisson param).
 //  val lambdas   = List(10.0)
-  val totalCust = pow(10, 7) .toInt          // FIXME 10^7 or 10^8
+  val totalCust = pow(10, 7) .toInt
   val k         = 12                         // Queue size
 
   val fixedOut: File = file"fixed.txt"
