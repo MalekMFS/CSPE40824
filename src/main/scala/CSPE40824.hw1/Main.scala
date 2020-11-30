@@ -37,7 +37,7 @@ object Main extends App{
 
   lambdas.foreach { lambda =>
       val (nBlocked, nOverdue, nDone) = {
-        Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, false)
+        Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, false, false)
       }
 
       println(f"Overdues: $nOverdue | Blocked: $nBlocked | Done: $nDone")
@@ -47,9 +47,22 @@ object Main extends App{
 
       fixedOut << f"$pb $pd"
   }
-  //TODO make new file for EXP mode
-  //  val expOut: File = file"exp.txt"
-  //  expOut < "" // clear the file
+
+  val expOut: File = file"exp.txt"
+  expOut < "" // clear the file
+
+  lambdas.foreach { lambda =>
+      val (nBlocked, nOverdue, nDone) = {
+        Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, true, false)
+      }
+
+      println(f"Overdues: $nOverdue | Blocked: $nBlocked | Done: $nDone")
+      val pb = nBlocked.toDouble / totalCust
+      val pd = nOverdue.toDouble / totalCust
+      println(f"pb: $pb | pd: $pd | lambda: $lambda | totalCustomers: $totalCust")
+
+    expOut << f"$pb $pd"
+  }
 
 
 //  val expAnalysisOut: File = file"expAnalysis.txt"

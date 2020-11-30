@@ -11,7 +11,7 @@ object Modeler {
   val expDist: (Double, Double) => Double =
     (x: Double, lam: Double) => -log(1 - x) / lam
 
-  def simulation (totalCust: Int, k: Int, mu: Double, theta: Double, lambda: Double, debug: Boolean = false): (Int, Int, Int) = {
+  def simulation (totalCust: Int, k: Int, mu: Double, theta: Double, lambda: Double, expTheta: Boolean, debug: Boolean = false): (Int, Int, Int) = {
     var queue     = new mutable.Queue[Customer](k)  // server queue limited to k. first is being served
     var events    = mutable.PriorityQueue.empty(MinOrder)   // events list.
     val r         = scala.util.Random          // Random number generator. use: r.nextDouble
@@ -21,7 +21,7 @@ object Modeler {
     var nDone:Int   = 0                        // #customers Done and got service
 
 
-    def generateCustomer(arrivalTime: Double, id: Int, expTheta: Boolean): Customer ={
+    def generateCustomer(arrivalTime: Double, id: Int): Customer ={
       Customer(
         arrivalTime,
         expDist(r.nextDouble(), mu),
@@ -42,7 +42,7 @@ object Modeler {
 
       e.eType match {
         case Arrival =>
-          val customer = generateCustomer(time, e.custId,false)
+          val customer = generateCustomer(time, e.custId)
 
           if (queue.size == k) nBlocked += 1
           else if(queue.size < k && queue.nonEmpty){
