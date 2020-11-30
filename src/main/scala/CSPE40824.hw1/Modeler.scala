@@ -28,29 +28,7 @@ object Modeler {
         if(expTheta) expDist(r.nextDouble(), 1/theta) else theta,
         id)
     }
-    /** create a list of Customers and their arrival, service, and wait time.
-     * generates arrival times, using expDist summing with previous arrival.
-     *
-     * Create Arrival event for all users.*/
-//    val randTimes: Iterator[Double] = List
-//      .fill(totalCust)(expDist(r.nextDouble(), lambda))
-//      .scan(0.0)(_+_)
-//      .iterator
-//    val customers: Map[Int, Customer]   = randTimes.zipWithIndex.map {
-//      case (arrive, index) =>
-//        (index,
-//          Customer(arrive,
-//            expDist(r.nextDouble(), mu),
-//            theta,
-//            index))
-//    }.toMap
-//    //  events ++= customers.values.map(c => Event(Arrival, c.arriveT, c.id))
-//    val tempSorted = mutable.PriorityQueue.empty(MinOrder)
-//    tempSorted ++= customers.values.map(c => Event(Arrival, c.arriveT, c.id))
-//    val aEvents = tempSorted.iterator
-//    events += aEvents.next()
 
-//    queue  += generateCustomer(time, 1, false) // do not use generate, because of initial time.
     var i = 1
     events += Event(Arrival, time , i)
     /** Main Loop */

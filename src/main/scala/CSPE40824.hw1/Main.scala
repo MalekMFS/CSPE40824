@@ -22,13 +22,13 @@ object Main extends App{
   //TODO use args for switching between Simulation modes, and Analysis mode
   //TODO fill readme file
   /** for Charts: lambda from 0.1 to 20.0 with 0.1 steps  */
-  /** for app: lambda = 5, 10, 15, and fixed wait time*/
-  //TODO Check BigDecimal and Double problem
+  //FIXME for app: lambda = 5, 10, 15, and fixed wait time
+
   val params    = file"src/main/resources/parameters.conf".lines.map(_.toDouble).take(2) //FIXME file location for TA test
   val theta     = params.head                // waiting time. TWO MODES: fixed and exp
   val mu        = params.tail.head           // server service rate
-//  val lambdas   = 0.1 to 20.0 by 0.1         // entrance rates (poisson param).
-  val lambdas   = List(10.0)
+  val lambdas   = 0.1 to 20.0 by 0.1         // entrance rates (poisson param).
+//  val lambdas   = List(10.0)
   val totalCust = pow(10, 7) .toInt          // FIXME 10^7 or 10^8
   val k         = 12                         // Queue size
 
@@ -37,14 +37,12 @@ object Main extends App{
 
   lambdas.foreach { lambda =>
       val (nBlocked, nOverdue, nDone) = {
-        Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, true)
+        Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, false)
       }
 
       println(f"Overdues: $nOverdue | Blocked: $nBlocked | Done: $nDone")
-      val pb = nBlocked / BigDecimal(totalCust)
-      val pd = nOverdue / BigDecimal(totalCust)
-//        val pb = nBlocked.toDouble / totalCust
-//        val pd = nOverdue.toDouble / totalCust
+      val pb = nBlocked.toDouble / totalCust
+      val pd = nOverdue.toDouble / totalCust
       println(f"pb: $pb | pd: $pd | lambda: $lambda | totalCustomers: $totalCust")
 
       fixedOut << f"$pb $pd"
