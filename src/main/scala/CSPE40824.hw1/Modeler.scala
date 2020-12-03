@@ -4,10 +4,8 @@ import CSPE40824.hw1.EventType.{Arrival, Done, Overdue}
 
 import scala.collection.mutable
 import scala.math.{E, log, pow}
-import scala.math.BigDecimal.double2bigDecimal
 
 object Modeler {
-  //TODO convert to Long instead of Bigdecimal
   val expDist: (Double, Double) => Double =
     (x: Double, lam: Double) => -log(1 - x) / lam
 
@@ -75,11 +73,11 @@ object Modeler {
     (nBlocked, nOverdue, nDone)
   }
 
-  def analysis(k: Int, mu: Int, theta: Int, lambda: Double): Map[String, List[Double]] = {
+  def analysis(k: Int, mu: Double, theta: Double, lambda: Double): Map[String, List[Double]] = {
     def fact(n: Int): Int = if (n <= 1) 1 else n * fact(n-1)
 
     val expRo = (n: Int) =>
-      fact(n) / (0 to n).map(i => mu + i / theta.toDouble).product
+      fact(n) / (0 to n).map(i => mu + i / theta).product
     val fixedRo = (n: Int) =>
       (fact(n).toDouble / pow(mu, n+1)) * (1 - pow(E, -(mu * theta)) * (0 to n-1).map(i => pow(mu*theta,i) / fact(i) ).sum)
     def Pn (n: Int, ro: Double): Double =
