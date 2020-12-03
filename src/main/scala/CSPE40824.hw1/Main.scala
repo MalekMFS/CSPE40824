@@ -52,7 +52,7 @@ object Main extends App{
       val theta     = params.head                // waiting time. TWO MODES: fixed and exp
       val mu        = params.tail.head           // server service rate
       val lambdas   = if (config.examinerRun) 5.0 to 15.0 by 5.0
-        else 0.1 to 20.0 by 0.1                  // entrance rates (poisson param).
+                      else 0.1 to 20.0 by 0.1    // entrance rates (poisson param).
       //  val lambdas   = List(10.0)
       val totalCust = pow(10, config.expOfCust) .toInt
       val k         = config.queueSize           // Queue size
@@ -94,7 +94,7 @@ object Main extends App{
             expOut << f"$pb $pd"
           }
 
-        case "Analysis" =>
+        case "analysis" =>
           println(".:Analysis mode:.\n Output will be overridden to expAnalysis.txt and fixedAnalysis.txt")
           val expAnalysisOut: File = file"expAnalysis.txt"
           val fixedAnalysisOut: File = file"fixedAnalysis.txt"
@@ -112,5 +112,4 @@ object Main extends App{
     case _ => println("bad arguments! try -h for list of arguments.")
   }
   //TODO fill readme file
-  //TODO make MAKEFILE to run exp and fixed mode in parallel
 }
