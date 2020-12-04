@@ -5,8 +5,12 @@ import better.files._
 import better.files.Dsl.SymbolicOperations
 import scopt.OParser
 
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.Duration
 import scala.math.BigDecimal.double2bigDecimal
 import scala.math.pow
+import scala.util.{Failure, Success}
 
 /** FCFS queue (M/M/1/K) Simulation and Analysis Modeling.
  *
@@ -63,18 +67,29 @@ object Main extends App{
           val fixedOut: File = file"fixed.txt"
           fixedOut < "" // clear the file
 
-          lambdas.foreach { lambda =>
-            val (nBlocked, nOverdue, nDone) = {
+          val fs = lambdas.map { lambda =>
+            Future {
               Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, expTheta = false, debug = config.debug)
             }
-
-            println(f"Overdues: $nOverdue | Blocked: $nBlocked | Done: $nDone")
-            val pb = nBlocked.toDouble / totalCust
-            val pd = nOverdue.toDouble / totalCust
-            println(f"pb: $pb | pd: $pd | lambda: $lambda | totalCustomers: $totalCust")
-
-            fixedOut << f"$pb $pd"
           }
+
+          val f = Future.sequence(fs)
+          f onComplete {
+            case Success(list) =>
+              var i = 0
+              list.foreach { case (nBlocked, nOverdue, nDone) =>
+                val pb = nBlocked.toDouble / totalCust
+                val pd = nOverdue.toDouble / totalCust
+                println(f"pb: $pb | pd: $pd | lambda: ${lambdas(i)} | totalCustomers: $totalCust")
+
+                fixedOut << f"$pb $pd"
+                i += 1
+              }
+            case Failure(exception) => println("error!\n" + exception)
+          }
+          Await.result(f,Duration.Inf)
+
+
 
         case "exp"   =>
           println(".:Simulation mode with Exponential Waiting times:.\n Output will be overridden to exp.txt")
