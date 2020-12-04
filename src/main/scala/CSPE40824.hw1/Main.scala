@@ -64,49 +64,46 @@ object Main extends App{
       config.mode match {
         case "fixed" =>
           println(".:Simulation mode with Fixed Waiting times:.\n Output will be overridden to fixed.txt")
-          val fixedOut: File = file"fixed.txt"
-          fixedOut < "" // clear the file
 
           val fs = lambdas.map { lambda =>
             Future {
               Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, expTheta = false, debug = config.debug)
             }
           }
-
           val f = Future.sequence(fs)
-          f onComplete {
-            case Success(list) =>
-              var i = 0
-              list.foreach { case (nBlocked, nOverdue, nDone) =>
-                val pb = nBlocked.toDouble / totalCust
-                val pd = nOverdue.toDouble / totalCust
-                println(f"pb: $pb | pd: $pd | lambda: ${lambdas(i)} | totalCustomers: $totalCust")
+          val res = Await.result(f,Duration.Inf)
+          var i = 0
+          val fixedOut: File = file"fixed.txt"
+          fixedOut.clear()
+          res.foreach { case (nBlocked, nOverdue, nDone) =>
+            val pb = nBlocked.toDouble / totalCust
+            val pd = nOverdue.toDouble / totalCust
+            println(f"pb: $pb | pd: $pd | lambda: ${lambdas(i)} | totalCustomers: $totalCust")
 
-                fixedOut << f"$pb $pd"
-                i += 1
-              }
-            case Failure(exception) => println("error!\n" + exception)
+            fixedOut << f"$pb $pd"
+            i += 1
           }
-          Await.result(f,Duration.Inf)
-
-
 
         case "exp"   =>
           println(".:Simulation mode with Exponential Waiting times:.\n Output will be overridden to exp.txt")
-          val expOut: File = file"exp.txt"
-          expOut < "" // clear the file
 
-          lambdas.foreach { lambda =>
-            val (nBlocked, nOverdue, nDone) = {
+          val fs = lambdas.map { lambda =>
+            Future{
               Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, expTheta = true, config.debug)
             }
-
-            println(f"Overdues: $nOverdue | Blocked: $nBlocked | Done: $nDone")
+          }
+          val f = Future.sequence(fs)
+          val res = Await.result(f,Duration.Inf)
+          var i = 0
+          val expOut: File = file"exp.txt"
+          expOut.clear()
+          res.foreach { case (nBlocked, nOverdue, nDone) =>
             val pb = nBlocked.toDouble / totalCust
             val pd = nOverdue.toDouble / totalCust
-            println(f"pb: $pb | pd: $pd | lambda: $lambda | totalCustomers: $totalCust")
+            println(f"pb: $pb | pd: $pd | lambda: ${lambdas(i)} | totalCustomers: $totalCust")
 
             expOut << f"$pb $pd"
+            i += 1
           }
 
         case "analysis" =>
