@@ -4,13 +4,16 @@ Which returns Blocked jobs and Overdue (timeout) jobs Probability to be imported
 
 ## How to run
 You could run the project with `sbt run "<parameters>"` or just run the .jar file followed by following parameters (without quotes).
-Note that all parameters are optional and have default values. Here are examples with default values.
+Note that all parameters are optional and have default values. Here are samples with default values:
 * `-e 7` or `--expOfCust 7`: Indicates number of Customers (Jobs) in terms of power of ten.
 The default is 7 (i.e 10^7).
 * `-k 12` or `--queueSize 12`: Server's queue size.
 * `--examiner`: Runs simulation only for lambda (λ) = 5, 10, 15
 * `--debug`: Prints out more info like Arrival, Done, and Overdue events.
-* `-m fixed`,`--mode fixed`: Switches between `analysis` mode and Simulation mode with `fixed` or `exp` theta (wait time) distributions.
+* `-m fixed`,`--mode fixed`: Switches between `analysis` mode and Simulation mode with `fixed` or `exp` theta (wait time) distributions.  
+
+Note: The *Theta* and *Mu* parameters are read from the *parameters.conf* as required by the examiner. 
+And it will run for lambda (λ) = 0.1 to 20 by 0.1 steps (200 values) by default.
 
 ## Build Standalone .jar file
 ` sbt assembly` 
