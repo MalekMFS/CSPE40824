@@ -10,7 +10,6 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
 import scala.math.BigDecimal.double2bigDecimal
 import scala.math.pow
-import scala.util.{Failure, Success}
 
 /** FCFS queue (M/M/1/K) Simulation and Analysis Modeling.
  *
