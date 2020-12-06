@@ -1,6 +1,6 @@
-package CSPE40824.hw1
+package CSPE40824
 
-import CSPE40824.hw1.EventType.{Arrival, Done, Overdue}
+import CSPE40824.EventType.{Arrival, Done, Overdue}
 
 import scala.collection.mutable
 import scala.math.{E, log, pow}

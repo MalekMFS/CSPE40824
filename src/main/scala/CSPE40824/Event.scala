@@ -1,4 +1,4 @@
-package CSPE40824.hw1
+package CSPE40824
 
 //TODO add a customer blocked event?
 object EventType extends Enumeration {
@@ -8,5 +8,5 @@ object EventType extends Enumeration {
 }
 
 /** att: type:[customer arrival, customer exit (aka deadline), customer exit from server], occurrence time, customer id */
-import CSPE40824.hw1.EventType.EventType
+import CSPE40824.EventType.EventType
 case class Event(eType: EventType, time: Double, custId: Int)

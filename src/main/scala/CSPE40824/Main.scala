@@ -1,4 +1,4 @@
-package CSPE40824.hw1
+package CSPE40824
 
 
 import better.files._
