@@ -122,5 +122,4 @@ object Main extends App{
 
     case _ => println("bad arguments! try -h for list of arguments.")
   }
-  //TODO fill readme file
 }
