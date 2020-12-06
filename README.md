@@ -1,4 +1,4 @@
-# CSPE40824.hw1
+# CSPE40824
 M/M/1/K Queue Simulation and Analysis Modeler for Computer System Performance Evaluation course assignment. 
 Which returns Blocked jobs and Overdue (timeout) jobs Probability to be imported into a Spreadsheet.
 
