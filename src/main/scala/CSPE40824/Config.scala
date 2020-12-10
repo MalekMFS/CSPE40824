@@ -6,4 +6,5 @@ case class Config(
      examinerRun: Boolean = false,
      debug: Boolean = false,
      mode: String = "fixed", //Analysis, Simulation with fixed or exp theta
+     queueMode: String = "fifo"
    )

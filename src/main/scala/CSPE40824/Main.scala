@@ -43,6 +43,10 @@ object Main extends App{
         .text("Shows more output for debug purposes"),
       opt[String]('m',"mode")
         .action((x,c) => c.copy(mode = x))
+        .text("Switch between 'analysis', Simulation with 'fixed' or 'exp' theta"),
+      opt[String]('q', "queueMode")
+        .action((x,c) => c.copy(queueMode = x))
+        .text("Switch between 'fifo' or 'rr' queue serving mode")
     )
   }
 

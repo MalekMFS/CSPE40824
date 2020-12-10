@@ -11,6 +11,7 @@ The default is 7 (i.e 10^7).
 * `--examiner`: Runs simulation only for lambda (λ) = 5, 10, 15
 * `--debug`: Prints out more info like Arrival, Done, and Overdue events.
 * `-m fixed`,`--mode fixed`: Switches between `analysis` mode and Simulation mode with `fixed` or `exp` theta (wait time) distributions.  
+* `-q fifo`, `--queueMode fifo`: Select queue's service mode. `fifo` for First come first served or `rr` for Round Robin.
 
 **Note:** The *Theta* and *Mu* parameters are read from the *parameters.conf* as required by the examiner. 
 And it will run for lambda (λ) = 0.1 to 20 by 0.1 steps (200 values) by default.
