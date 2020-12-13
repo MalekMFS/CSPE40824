@@ -1,5 +1,5 @@
-name := "CSPE-40824-hw1"
-version := "0.1"
+name := "CSPE-40824"
+version := "0.2"
 scalaVersion := "2.13.3"
 //enablePlugins(JmhPlugin)
 

@@ -6,6 +6,7 @@ import scala.collection.mutable
 import scala.math.{E, log, pow}
 
 object Modeler {
+
   val expDist: (Double, Double) => Double =
     (x: Double, lam: Double) => -log(1 - x) / lam
 
@@ -73,38 +74,76 @@ object Modeler {
     (nBlocked, nOverdue, nDone)
   }
 
-  def analysis(k: Int, mu: Double, theta: Double, lambda: Double): Map[String, List[Double]] = {
+  def analysis(k: Int, mu: Double, theta: Double, lambda: Double, queueMode: String): Map[String, List[Double]] = {
+
     def fact(n: Int): Int = if (n <= 1) 1 else n * fact(n-1)
+    var pbExp, pbFixed, pdExp, pdFixed   = 0.0
 
-    val expRo = (n: Int) =>
-      fact(n) / (0 to n).map(i => mu + i / theta).product
-    val fixedRo = (n: Int) =>
-      (fact(n).toDouble / pow(mu, n+1)) * (1 - pow(E, -(mu * theta)) * (0 to n-1).map(i => pow(mu*theta,i) / fact(i) ).sum)
-    def Pn (n: Int, ro: Double): Double =
-    // Each returned value must multiply with 'p0' to get 'pn'
-      n compare 1 match {
-        case 0 => lambda / mu
-        case 1 => pow(lambda, n) * ro / fact(n - 1)
-        case -1 => 1 // same as others must multiply to p0
-      }
+    queueMode match {
 
-    val expRoVals = (0 to k).map(expRo) //NOTE the 0 is dummy and will not be used
-    val fixedRoVals = (0 to k).map(fixedRo)
+      case "fifo" =>
+        val expRo = (n: Int) =>
+          fact(n) / (0 to n).map(i => mu + i / theta).product
+        val fixedRo = (n: Int) =>
+          (fact(n).toDouble / pow(mu, n+1)) * (1 - pow(E, -(mu * theta)) * (0 to n-1).map(i => pow(mu*theta,i) / fact(i) ).sum)
+        def Pn (n: Int, ro: Double): Double =
+        // Each returned value must multiply with 'p0' to get 'pn'
+          n compare 1 match {
+            case 0 => lambda / mu
+            case 1 => pow(lambda, n) * ro / fact(n - 1)
+            case -1 => 1 // same as others must multiply to p0
+          }
 
-    val XExp =   (1 to k).map(n => Pn(n, expRoVals(n-1))) // changed -1 here because ro0 will not be calculated
-    val XFixed = (1 to k).map(n => Pn(n, fixedRoVals(n-1)))
-    val p0Exp   = 1 / (XExp.sum + 1.0)   // +1 to add p0
-    val p0Fixed = 1 / (XFixed.sum + 1.0) // +1 to add p0
+        val expRoVals = (0 to k).map(expRo) //NOTE the 0 is dummy and will not be used
+        val fixedRoVals = (0 to k).map(fixedRo)
 
-    val pnExp   = p0Exp   +: XExp.map(_ * p0Exp)
-    val pnFixed = p0Fixed +: XFixed.map(_ * p0Fixed)
+        val XExp =   (1 to k).map(n => Pn(n, expRoVals(n-1))) // changed -1 here because ro0 will not be calculated
+        val XFixed = (1 to k).map(n => Pn(n, fixedRoVals(n-1)))
+        val p0Exp   = 1 / (XExp.sum + 1.0)   // +1 to add p0
+        val p0Fixed = 1 / (XFixed.sum + 1.0) // +1 to add p0
 
-    val pbExp   = pnExp(k)
-    val pbFixed = pnFixed(k)
+        val pnExp   = p0Exp   +: XExp.map(_ * p0Exp)
+        val pnFixed = p0Fixed +: XFixed.map(_ * p0Fixed)
 
-    /** using last formula */
-    val pdExp   = 1 - (mu/lambda) * (1 - p0Exp)   - pbExp
-    val pdFixed = 1 - (mu/lambda) * (1 - p0Fixed) - pbFixed
+        pbExp   = pnExp(k)
+        pbFixed = pnFixed(k)
+
+        /** using last formula */
+        pdExp   = 1 - (mu/lambda) * (1 - p0Exp)   - pbExp
+        pdFixed = 1 - (mu/lambda) * (1 - p0Fixed) - pbFixed
+
+      case "ps" =>
+        val expGama = (n: Int) =>
+          n compareTo 0 match {
+            case 0 => 0
+            case 1 => n / theta
+          }
+        val fixedGama = (n: Int) =>
+          n compareTo 0 match {
+            case 0 => 0
+            case 1 => mu / (pow( E, (mu * theta) / n ) - 1)
+          }
+        def Pn (n: Int, gama: Int => Double, p0: Double): Double =
+          if (n >= 1)
+            (pow(lambda,n) / (1 to n).map(i => mu + gama(i)).product) * p0
+          else 0 // No n below 1
+        def fP0 (gama: Int => Double): Double =
+          pow(1 + (1 to k).map( i => pow(lambda, i) / (1 to i).map(j => mu + gama(j)).product ).sum,
+            -1)
+
+        val p0Exp   = fP0(expGama)
+        val p0Fixed = fP0(fixedGama)
+
+        val pnExp   = p0Exp   +: (1 to k).map(n => Pn(n, expGama, p0Exp))
+        val pnFixed = p0Fixed +: (1 to k).map(n => Pn(n, fixedGama, p0Fixed))
+
+        pbExp   = pnExp(k)
+        pbFixed = pnFixed(k)
+
+        /** using last formula */
+        pdExp   = 1 - (mu/lambda) * (1 - p0Exp)   - pbExp
+        pdFixed = 1 - (mu/lambda) * (1 - p0Fixed) - pbFixed
+    }
 
     Map("exp" -> List(pbExp, pdExp), "fixed" -> List(pbFixed, pdFixed))
   }

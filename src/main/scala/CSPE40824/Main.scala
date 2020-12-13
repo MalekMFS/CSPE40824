@@ -46,7 +46,7 @@ object Main extends App{
         .text("Switch between 'analysis', Simulation with 'fixed' or 'exp' theta"),
       opt[String]('q', "queueMode")
         .action((x,c) => c.copy(queueMode = x))
-        .text("Switch between 'fifo' or 'rr' queue serving mode")
+        .text("Switch between 'fifo' or 'ps' queue serving mode")
     )
   }
 
@@ -116,7 +116,7 @@ object Main extends App{
           expAnalysisOut < ""; fixedAnalysisOut < "" // make or clear the file
 
           lambdas.map { lambda =>
-            val pbPd: Map[String, List[Double]] = Modeler.analysis(k, mu, theta, lambda.toDouble)
+            val pbPd: Map[String, List[Double]] = Modeler.analysis(k, mu, theta, lambda.toDouble, config.queueMode)
             val expRes = pbPd("exp")
             val fixedRes = pbPd("fixed")
             expAnalysisOut   << f"${expRes.head} ${expRes.tail.head}"
