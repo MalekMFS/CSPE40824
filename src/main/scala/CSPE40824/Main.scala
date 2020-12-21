@@ -37,7 +37,7 @@ object Main extends App{
         .text("Server's Queue Size"),
       opt[Unit]("examiner")
         .action((_, c) => c.copy(examinerRun = true))
-        .text("Run only for lambda = 5, 10, 15 and fixed wait time for examiner"),
+        .text("Run only for lambda = 5, 10, 15 for examiner use"),
       opt[Unit]("debug")
         .action((_, c) => c.copy(debug = true))
         .text("Shows more output for debug purposes"),
@@ -66,11 +66,11 @@ object Main extends App{
 
       config.mode match {
         case "fixed" =>
-          println(".:Simulation mode with Fixed Waiting times:.\n Output will be overridden to fixed.txt")
+          println(f".:Simulation mode with Fixed Waiting times and ${config.queueMode} queue:.\n Output will be overridden to fixed.txt")
 
           val fs = lambdas.map { lambda =>
             Future {
-              Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, expTheta = false, debug = config.debug)
+              Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, expTheta = false, config.queueMode, debug = config.debug)
             }
           }
           val f = Future.sequence(fs)
@@ -88,11 +88,11 @@ object Main extends App{
           }
 
         case "exp"   =>
-          println(".:Simulation mode with Exponential Waiting times:.\n Output will be overridden to exp.txt")
+          println(s".:Simulation mode with Exponential Waiting times and ${config.queueMode} queue:.\n Output will be overridden to exp.txt")
 
           val fs = lambdas.map { lambda =>
             Future{
-              Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, expTheta = true, config.debug)
+              Modeler.simulation(totalCust, k, mu, theta, lambda.toDouble, expTheta = true, config.queueMode, config.debug)
             }
           }
           val f = Future.sequence(fs)
@@ -110,7 +110,7 @@ object Main extends App{
           }
 
         case "analysis" =>
-          println(".:Analysis mode:.\n Output will be overridden to expAnalysis.txt and fixedAnalysis.txt")
+          println(f".:Analysis mode with ${config.queueMode} queue:.\n Output will be overridden to expAnalysis.txt and fixedAnalysis.txt")
           val expAnalysisOut: File = file"expAnalysis.txt"
           val fixedAnalysisOut: File = file"fixedAnalysis.txt"
           expAnalysisOut < ""; fixedAnalysisOut < "" // make or clear the file

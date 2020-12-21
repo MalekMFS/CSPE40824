@@ -10,7 +10,7 @@ object Modeler {
   val expDist: (Double, Double) => Double =
     (x: Double, lam: Double) => -log(1 - x) / lam
 
-  def simulation (totalCust: Int, k: Int, mu: Double, theta: Double, lambda: Double, expTheta: Boolean, debug: Boolean = false): (Int, Int, Int) = {
+  def simulation (totalCust: Int, k: Int, mu: Double, theta: Double, lambda: Double, expTheta: Boolean, queueMode: String, debug: Boolean = false): (Int, Int, Int) = {
     var queue     = new mutable.Queue[Customer](k)  // server queue limited to k. first is being served
     var events    = mutable.PriorityQueue.empty(MinOrder)   // events list.
     val r         = scala.util.Random          // Random number generator. use: r.nextDouble
@@ -28,48 +28,111 @@ object Modeler {
         id)
     }
 
-    var i = 1
-    events += Event(Arrival, time , i)
-    /** Main Loop */
-    while(nBlocked+nDone+nOverdue < totalCust){
-      if (debug)
-        println(f"> Queue: ${queue.size} | Events: ${events.size}")
-      val e = events.dequeue()
-      time = e.time
-      if (debug)
-        println(f"${e.eType} | Customer: ${e.custId} | Time: ${e.time}")
+    queueMode match {
+      case "fifo" =>
+        var i = 1
+        events += Event(Arrival, time , i)
+        /** Main Loop */
+        while(nBlocked+nDone+nOverdue < totalCust){
+          if (debug)
+            println(f"> Queue: ${queue.size} | Events: ${events.size}")
+          val e = events.dequeue()
+          time = e.time
+          if (debug)
+            println(f"${e.eType} | Customer: ${e.custId} | Time: ${e.time}")
 
-      e.eType match {
-        case Arrival =>
-          val customer = generateCustomer(time, e.custId)
+          e.eType match {
+            case Arrival =>
+              val customer = generateCustomer(time, e.custId)
 
-          if (queue.size == k) nBlocked += 1
-          else if(queue.size < k && queue.nonEmpty){
-            queue  += customer
-            events += Event(Overdue, time + customer.waitT, customer.id)
-          }
-          else if(queue.isEmpty){
-            queue  += customer
-            events += Event(Done, time + customer.serviceT, customer.id)
-          }
-          if (i < totalCust){
-            i += 1
-            events += Event(Arrival, time + expDist(r.nextDouble(), lambda), i) // always have the next Arrival
-          }
+              if (queue.size == k) nBlocked += 1
+              else if(queue.isEmpty){
+                queue  += customer
+                events += Event(Done, time + customer.serviceT, customer.id)
+              }
+              else { // (queue.size < k && queue.nonEmpty)
+                queue  += customer
+                events += Event(Overdue, time + customer.waitT, customer.id)
+              }
+              if (i < totalCust){
+                i += 1
+                events += Event(Arrival, time + expDist(r.nextDouble(), lambda), i) // always have the next Arrival
+              }
 
-        case Overdue =>
-          queue = queue.filter(_.id != e.custId); nOverdue += 1
+            case Overdue =>
+              queue.dequeueFirst(_.id == e.custId); nOverdue += 1
 
-        case Done =>
-          nDone += 1
-          queue.dequeue()
-          if (queue.nonEmpty) {
-            val current = queue.head
-            events = events.filter(a =>
-              a.custId != current.id || a.eType != Overdue) // remove user overdue event
-            events += Event(Done, time + current.serviceT, current.id)
+            case Done =>
+              nDone += 1
+              queue.dequeue()
+              if (queue.nonEmpty) {
+                val current = queue.head
+                events = events.filterNot(a =>
+                  a.custId == current.id && a.eType == Overdue) // remove user overdue event
+                events += Event(Done, time + current.serviceT, current.id)
+              }
           }
-      }
+        }
+
+        /** No Done event */
+      case "ps" =>
+        var i = 1
+        events += Event(Arrival, time , i)
+
+        /** Main Loop */
+        while(nBlocked+nDone+nOverdue < totalCust){
+          if (debug)
+            println(f"> Queue: ${queue.size} | Events: ${events.size}")
+          val e = events.dequeue()
+          if (debug)
+            println(f"${e.eType} | Customer: ${e.custId} | Time: ${e.time}")
+
+          /** compute remaining service time for customers in the queue */
+          val queueSize = queue.size
+          if (queueSize > 0) {
+
+            queue = queue.map(c => Customer(c.arriveT, c.serviceT - (mu/queueSize) * (e.time - time), c.waitT, c.id))
+            var temp = mutable.Queue[Customer]()
+            queue.foreach { c =>
+              if (c.serviceT <= 0.0) {
+                temp += c; nDone += 1
+                events = events.filterNot(_.custId == c.id ) // remove user overdue event
+              }
+            }
+            if (temp.nonEmpty) queue --= temp
+          }
+          time = e.time // Update time
+
+          e.eType match {
+
+            case Arrival =>
+              if (queue.size == k) nBlocked += 1
+              else {
+                // (queue.size < k)
+                val customer = generateCustomer(time, e.custId)
+                queue  += customer
+                events += Event(Overdue, time + customer.waitT, customer.id)
+              }
+              if ( i < totalCust){
+                i += 1
+                events += Event(Arrival, time + expDist(r.nextDouble(), lambda), i) // always have the next Arrival
+              }
+
+            case Overdue =>
+              val customer = queue
+                .dequeueFirst(_.id == e.custId)
+              customer match {
+                case Some(c) =>
+                  if (c.serviceT > 0.0)
+                    nOverdue += 1
+                  else nDone += 1
+
+                /** Current event is an Overdue but the Customer already finished and removed from the queue */
+                case None => None
+              }
+          }
+        }
+
     }
     (nBlocked, nOverdue, nDone)
   }
