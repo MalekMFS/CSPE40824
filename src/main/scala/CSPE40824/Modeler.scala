@@ -11,7 +11,7 @@ object Modeler {
     (x: Double, lam: Double) => -log(1 - x) / lam
 
   def simulation (totalCust: Int, k: Int, mu: Double, theta: Double, lambda: Double, expTheta: Boolean, queueMode: String, debug: Boolean = false): (Int, Int, Int) = {
-    var queue     = new mutable.Queue[Customer](k)  // server queue limited to k. first is being served
+    var queue     = new mutable.Queue[Customer](k)  // server queue limited to k. first is being served in FIFO mode
     var events    = mutable.PriorityQueue.empty(MinOrder)   // events list.
     val r         = scala.util.Random          // Random number generator. use: r.nextDouble
     var time:Double= 0.0
@@ -90,7 +90,6 @@ object Modeler {
           /** compute remaining service time for customers in the queue */
           val queueSize = queue.size
           if (queueSize > 0) {
-
             queue = queue.map(c => Customer(c.arriveT, c.serviceT - (mu/queueSize) * (e.time - time), c.waitT, c.id))
             var temp = mutable.Queue[Customer]()
             queue.foreach { c =>
@@ -122,12 +121,10 @@ object Modeler {
               val customer = queue
                 .dequeueFirst(_.id == e.custId)
               customer match {
-                case Some(c) =>
-                  if (c.serviceT > 0.0)
-                    nOverdue += 1
-                  else nDone += 1
+                /** it is a Overdue and Customer didn't get remove from the queue. So this is an Overdue */
+                case Some(c) => nOverdue += 1
 
-                /** Current event is an Overdue but the Customer already finished and removed from the queue */
+                /** Current event is an Overdue but the Customer already finished, removed from the queue, and nDone inc */
                 case None => None
               }
           }
