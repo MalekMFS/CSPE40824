@@ -74,7 +74,7 @@ object Modeler {
           }
         }
 
-        /** No Done event */
+        /** This mode has No Done event */
       case "ps" =>
         var i = 1
         events += Event(Arrival, time , i)
@@ -91,14 +91,16 @@ object Modeler {
           val queueSize = queue.size
           if (queueSize > 0) {
             queue = queue.map(c => Customer(c.arriveT, c.serviceT - (mu/queueSize) * (e.time - time), c.waitT, c.id))
-            var temp = mutable.Queue[Customer]()
+            var doneCustomers = mutable.ArrayBuffer[Customer]()
             queue.foreach { c =>
               if (c.serviceT <= 0.0) {
-                temp += c; nDone += 1
-                events = events.filterNot(_.custId == c.id ) // remove user overdue event
+                doneCustomers += c
+                nDone += 1
+                events = events.filterNot(_.custId == c.id ) // remove user's overdue event
               }
             }
-            if (temp.nonEmpty) queue --= temp
+            // Remove finished Customers from the queue
+            if (doneCustomers.nonEmpty) doneCustomers.foreach( c => queue.dequeueFirst(_.id == c.id) )
           }
           time = e.time // Update time
 
@@ -112,7 +114,7 @@ object Modeler {
                 queue  += customer
                 events += Event(Overdue, time + customer.waitT, customer.id)
               }
-              if ( i < totalCust){
+              if (i < totalCust){
                 i += 1
                 events += Event(Arrival, time + expDist(r.nextDouble(), lambda), i) // always have the next Arrival
               }
@@ -121,7 +123,7 @@ object Modeler {
               val customer = queue
                 .dequeueFirst(_.id == e.custId)
               customer match {
-                /** it is a Overdue and Customer didn't get remove from the queue. So this is an Overdue */
+                /** Customer didn't get remove from the queue. So this is an Overdue */
                 case Some(c) => nOverdue += 1
 
                 /** Current event is an Overdue but the Customer already finished, removed from the queue, and nDone inc */
