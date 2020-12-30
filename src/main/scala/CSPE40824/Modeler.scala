@@ -124,7 +124,7 @@ object Modeler {
                 .dequeueFirst(_.id == e.custId)
               customer match {
                 /** Customer didn't get remove from the queue. So this is an Overdue */
-                case Some(c) => nOverdue += 1
+                case Some(_) => nOverdue += 1
 
                 /** Current event is an Overdue but the Customer already finished, removed from the queue, and nDone inc */
                 case None => None
