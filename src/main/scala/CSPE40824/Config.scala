@@ -7,5 +7,5 @@ case class Config(
      examinerRun: Boolean = false,
      debug: Boolean = false,
      mode: String = "fixed", //Analysis, Simulation with fixed or exp theta
-     queueMode: String = "fifo" // FIFO or Processor Sharing (Ideal Round Robin)
+     queueMode: String = "fifo" // FIFO, Processor Sharing (Ideal Round Robin), or Discriminatory Processor Sharing
    )

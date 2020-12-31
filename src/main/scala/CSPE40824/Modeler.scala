@@ -20,12 +20,14 @@ object Modeler {
     var nDone:Int   = 0                        // #customers Done and got service
 
 
-    def generateCustomer(arrivalTime: Double, id: Int): Customer ={
+    def generateCustomer(arrivalTime: Double, id: Int, classless: Boolean = true): Customer ={
       Customer(
         arrivalTime,
         expDist(r.nextDouble(), mu),
         if(expTheta) expDist(r.nextDouble(), 1/theta) else theta,
-        id)
+        id,
+        if(classless) 1 else r.between(1, 3).toByte // in [1, 3)
+      )
     }
 
     queueMode match {
@@ -90,6 +92,7 @@ object Modeler {
           /** compute remaining service time for customers in the queue */
           val queueSize = queue.size
           if (queueSize > 0) {
+            //FIXME to increase the accuracy, time must also iterate to the next DONE event (exact zero service time left).
             queue = queue.map(c => Customer(c.arriveT, c.serviceT - (mu/queueSize) * (e.time - time), c.waitT, c.id))
             var doneCustomers = mutable.ArrayBuffer[Customer]()
             queue.foreach { c =>
@@ -111,6 +114,66 @@ object Modeler {
               else {
                 // (queue.size < k)
                 val customer = generateCustomer(time, e.custId)
+                queue  += customer
+                events += Event(Overdue, time + customer.waitT, customer.id)
+              }
+              if (i < totalCust){
+                i += 1
+                events += Event(Arrival, time + expDist(r.nextDouble(), lambda), i) // always have the next Arrival
+              }
+
+            case Overdue =>
+              val customer = queue
+                .dequeueFirst(_.id == e.custId)
+              customer match {
+                /** Customer didn't get remove from the queue. So this is an Overdue */
+                case Some(_) => nOverdue += 1
+
+                /** Current event is an Overdue but the Customer already finished, removed from the queue, and nDone inc */
+                case None => None
+              }
+          }
+        }
+
+      case "dps" =>
+        var i = 1
+        events += Event(Arrival, time , i)
+
+        /** Main Loop */
+        while(nBlocked+nDone+nOverdue < totalCust){
+          if (debug)
+            println(f"> Queue: ${queue.size} | Events: ${events.size}")
+          val e = events.dequeue()
+          if (debug)
+            println(f"${e.eType} | Customer: ${e.custId} | Time: ${e.time}")
+
+          /** compute remaining service time for customers in the queue */
+          val queueSize = queue.size
+          if (queueSize > 0) {
+            val nClass2 = queue.count(_.uClass == 2)
+            val weightsSum = (queueSize - nClass2) + (nClass2 * 2)
+            //FIXME to increase the accuracy, time must also iterate to the next DONE event (exact zero service time left).
+            queue = queue.map(c => Customer(c.arriveT, c.serviceT - (mu * c.uClass /weightsSum) * (e.time - time), c.waitT, c.id))
+            var doneCustomers = mutable.ArrayBuffer[Customer]()
+            queue.foreach { c =>
+              if (c.serviceT <= 0.0) {
+                doneCustomers += c
+                nDone += 1
+                events = events.filterNot(_.custId == c.id ) // remove user's overdue event
+              }
+            }
+            // Remove finished Customers from the queue
+            if (doneCustomers.nonEmpty) doneCustomers.foreach( c => queue.dequeueFirst(_.id == c.id) )
+          }
+          time = e.time // Update time
+
+          e.eType match {
+
+            case Arrival =>
+              if (queue.size == k) nBlocked += 1
+              else {
+                // (queue.size < k)
+                val customer = generateCustomer(time, e.custId, false)
                 queue  += customer
                 events += Event(Overdue, time + customer.waitT, customer.id)
               }

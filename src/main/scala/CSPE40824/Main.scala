@@ -46,21 +46,21 @@ object Main extends App{
         .text("Switch between 'analysis', Simulation with 'fixed' or 'exp' theta"),
       opt[String]('q', "queueMode")
         .action((x,c) => c.copy(queueMode = x))
-        .text("Switch between 'fifo' or 'ps' queue serving mode")
+        .text("Switch between 'fifo', 'ps', 'dps` queue scheduling mode")
     )
   }
 
-  /** for Charts: lambda from 0.1 to 20.0 with 0.1 steps
-   * for Examiner: lambda = 5, 10, 15 */
   // OParser.parse returns Option[Config]
   OParser.parse(parser1, args, Config()) match {
     case Some(config) =>
       val params    = file"parameters.conf".lines.map(_.toDouble).take(2)
       val theta     = params.head                // waiting time. TWO MODES: fixed and exp
       val mu        = params.tail.head           // server service rate
+      /** for Charts: lambda from 0.1 to 20.0 with 0.1 steps
+       * for Examiner: lambda = 5, 10, 15 */
       val lambdas   = if (config.examinerRun) 5.0 to 15.0 by 5.0
                       else 0.1 to 20.0 by 0.1    // entrance rates (poisson param).
-      //  val lambdas   = List(10.0)
+      //  val lambdas   = List(10.0) // for debug purpose
       val totalCust = pow(10, config.expOfCust) .toInt
       val k         = config.queueSize           // Queue size
 
