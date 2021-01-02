@@ -10,14 +10,16 @@ object Modeler {
   val expDist: (Double, Double) => Double =
     (x: Double, lam: Double) => -log(1 - x) / lam
 
-  def simulation (totalCust: Int, k: Int, mu: Double, theta: Double, lambda: Double, expTheta: Boolean, queueMode: String, debug: Boolean = false): (Int, Int, Int) = {
+  def simulation (totalCust: Int, k: Int, mu: Double, theta: Double, lambda: Double, expTheta: Boolean, queueMode: String, debug: Boolean = false): (Int, List[Int], Int) = {
     var queue     = new mutable.Queue[Customer](k)  // server queue limited to k. first is being served in FIFO mode
     var events    = mutable.PriorityQueue.empty(MinOrder)   // events list.
     val r         = scala.util.Random          // Random number generator. use: r.nextDouble
-    var time:Double= 0.0
+    var time:Double    = 0.0
     var nBlocked:Int   = 0                     // #customers encountered full queue
     var nOverdue:Int   = 0                     // #customers left due to Deadline (theta)
-    var nDone:Int   = 0                        // #customers Done and got service
+    var nOverdue1:Int  = 0                     // for dps mode
+    var nOverdue2:Int  = 0
+    var nDone:Int      = 0                     // #customers Done and got service
 
 
     def generateCustomer(arrivalTime: Double, id: Int, classless: Boolean = true): Customer ={
@@ -26,7 +28,7 @@ object Modeler {
         expDist(r.nextDouble(), mu),
         if(expTheta) expDist(r.nextDouble(), 1/theta) else theta,
         id,
-        if(classless) 1 else r.between(1, 3).toByte // in [1, 3)
+        if(classless) 1 else r.between(1, 3).toByte // in [1, 3)   //(r.nextInt(2) + 1).toByte//
       )
     }
 
@@ -149,11 +151,12 @@ object Modeler {
 
           /** compute remaining service time for customers in the queue */
           val queueSize = queue.size
+
           if (queueSize > 0) {
             val nClass2 = queue.count(_.uClass == 2)
-            val weightsSum = (queueSize - nClass2) + (nClass2 * 2)
+            val weightsSum = (queueSize - nClass2) + (nClass2 * 2) // class1.count + (class2.count * 2)
             //FIXME to increase the accuracy, time must also iterate to the next DONE event (exact zero service time left).
-            queue = queue.map(c => Customer(c.arriveT, c.serviceT - (mu * c.uClass /weightsSum) * (e.time - time), c.waitT, c.id))
+            queue = queue.map(c => Customer(c.arriveT, c.serviceT - (mu * c.uClass /weightsSum) * (e.time - time), c.waitT, c.id, c.uClass))
             var doneCustomers = mutable.ArrayBuffer[Customer]()
             queue.foreach { c =>
               if (c.serviceT <= 0.0) {
@@ -173,7 +176,7 @@ object Modeler {
               if (queue.size == k) nBlocked += 1
               else {
                 // (queue.size < k)
-                val customer = generateCustomer(time, e.custId, false)
+                val customer = generateCustomer(time, e.custId, classless = false)
                 queue  += customer
                 events += Event(Overdue, time + customer.waitT, customer.id)
               }
@@ -187,7 +190,9 @@ object Modeler {
                 .dequeueFirst(_.id == e.custId)
               customer match {
                 /** Customer didn't get remove from the queue. So this is an Overdue */
-                case Some(_) => nOverdue += 1
+                case Some(c) =>
+                  nOverdue += 1
+                  if (c.uClass == 1) nOverdue1 += 1 else nOverdue2 += 1
 
                 /** Current event is an Overdue but the Customer already finished, removed from the queue, and nDone inc */
                 case None => None
@@ -196,7 +201,7 @@ object Modeler {
         }
 
     }
-    (nBlocked, nOverdue, nDone)
+    (nBlocked, List(nOverdue, nOverdue1, nOverdue2), nDone)
   }
 
   def analysis(k: Int, mu: Double, theta: Double, lambda: Double, queueMode: String): Map[String, List[Double]] = {

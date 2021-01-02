@@ -80,10 +80,17 @@ object Main extends App{
           fixedOut.clear()
           res.foreach { case (nBlocked, nOverdue, nDone) =>
             val pb = nBlocked.toDouble / totalCust
-            val pd = nOverdue.toDouble / totalCust
-            println(f"pb: $pb | pd: $pd | lambda: ${lambdas(i)} | totalCustomers: $totalCust")
+            val pd = nOverdue.head.toDouble / totalCust
 
-            fixedOut << f"$pb $pd"
+            if (config.queueMode == "dps"){
+              val pd1 = nOverdue.tail.head.toDouble / totalCust
+              val pd2 = nOverdue.last.toDouble / totalCust
+              println(f"pb: $pb | pd(total - c1 - c2): $pd - $pd1 - $pd2 | lambda: ${lambdas(i)} | totalCustomers: $totalCust")
+              fixedOut << f"$pb $pd $pd1 $pd2"
+            } else {
+              println(f"pb: $pb | pd: $pd | lambda: ${lambdas(i)} | totalCustomers: $totalCust")
+              fixedOut << f"$pb $pd"
+            }
             i += 1
           }
 
@@ -102,10 +109,16 @@ object Main extends App{
           expOut.clear()
           res.foreach { case (nBlocked, nOverdue, nDone) =>
             val pb = nBlocked.toDouble / totalCust
-            val pd = nOverdue.toDouble / totalCust
-            println(f"pb: $pb | pd: $pd | lambda: ${lambdas(i)} | totalCustomers: $totalCust")
-
-            expOut << f"$pb $pd"
+            val pd = nOverdue.head.toDouble / totalCust
+            if (config.queueMode == "dps"){
+              val pd1 = nOverdue.tail.head.toDouble / totalCust
+              val pd2 = nOverdue.last.toDouble / totalCust
+              println(f"pb: $pb | pd(total - c1 - c2): $pd - $pd1 - $pd2 | lambda: ${lambdas(i)} | totalCustomers: $totalCust")
+              expOut << f"$pb $pd $pd1 $pd2"
+            } else {
+              println(f"pb: $pb | pd: $pd | lambda: ${lambdas(i)} | totalCustomers: $totalCust")
+              expOut << f"$pb $pd"
+            }
             i += 1
           }
 
