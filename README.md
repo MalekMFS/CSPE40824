@@ -4,7 +4,7 @@ Which returns Blocked jobs and Overdue (timeout) jobs Probability to be imported
 
 ## How to run
 You could run the project with `sbt run "<parameters>"` or just run the .jar file followed by the following parameters (without quotes).
-Note that all parameters are optional and have default values. Here are samples with default values:
+Note that all parameters are optional and have default values, However, you need *parameters.conf* alongside of project as it's required by the examiner. Here are samples with default values:
 * `-e 7` or `--expOfCust 7`: Indicates the number of Customers (Jobs) in terms of the power of ten.
 The default is 7 (i.e 10^7).
 * `-k 12` or `--queueSize 12`: Server's queue size.
