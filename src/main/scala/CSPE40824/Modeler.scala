@@ -155,8 +155,34 @@ object Modeler {
           if (queueSize > 0) {
             val nClass2 = queue.count(_.uClass == 2)
             val weightsSum = (queueSize - nClass2) + (nClass2 * 2) // class1.count + (class2.count * 2)
-            //FIXME to increase the accuracy, time must also iterate to the next DONE event (exact zero service time left).
             queue = queue.map(c => Customer(c.arriveT, c.serviceT - (mu * c.uClass /weightsSum) * (e.time - time), c.waitT, c.id, c.uClass))
+
+            /** add exceeded service times to other customers */
+            val exceeded = queue.filter(_.serviceT < 0.0)
+            if (exceeded.nonEmpty && exceeded.size != queue.size){
+              var heapQueue = mutable.PriorityQueue.empty(CustomerMinOrder) // for precise processor sharing
+
+              heapQueue ++= queue
+              while (heapQueue.nonEmpty && heapQueue.head.serviceT < 0.0){
+                // Remove the customer that finished first
+                val minimum = heapQueue.dequeue()
+                queue.dequeueFirst(_.id == minimum.id)
+                nDone += 1
+                events = events.filterNot(_.custId == minimum.id) // remove user's overdue event
+
+                // Add his exceeded time to others
+                val queueSize_new = queue.size
+                val nClass2_new = queue.count(_.uClass == 2)
+                val weightsSum_new = (queueSize_new - nClass2_new) + (nClass2_new * 2) // class1.count + (class2.count * 2)
+                queue = queue.map(c => Customer(c.arriveT, c.serviceT - (mu * c.uClass / weightsSum_new) * minimum.serviceT.abs, c.waitT, c.id, c.uClass))
+
+                // Update the heap
+                heapQueue.dequeueAll
+                heapQueue ++= queue
+              }
+            }
+
+            /** Check if anyone else finished: 1. All in the queue finished 2. Someone's ServiceT reached exactly 0.0 */
             var doneCustomers = mutable.ArrayBuffer[Customer]()
             queue.foreach { c =>
               if (c.serviceT <= 0.0) {
@@ -168,8 +194,8 @@ object Modeler {
             // Remove finished Customers from the queue
             if (doneCustomers.nonEmpty) doneCustomers.foreach( c => queue.dequeueFirst(_.id == c.id) )
           }
-          time = e.time // Update time
 
+          time = e.time // Update time
           e.eType match {
 
             case Arrival =>
@@ -282,4 +308,7 @@ object Modeler {
 
 object MinOrder extends Ordering[Event] {
   override def compare(x: Event, y: Event): Int = y.time.compareTo(x.time)
+}
+object CustomerMinOrder extends Ordering[Customer] {
+  override def compare(x: Customer, y: Customer): Int = (y.serviceT / y.uClass).compareTo(x.serviceT / x.uClass)
 }
